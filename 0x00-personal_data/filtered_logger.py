@@ -11,8 +11,8 @@ import mysql.connector
 from mysql.connector import connection
 
 
-def filter_datum(fields: List[str], redaction:
-                 str, message: str, separator: str) -> str:
+def filter_datum(fields: List[str], redaction: str, message: str,
+                 separator: str) -> str:
     """
     Obfuscates specified fields in a log message.
 
@@ -26,8 +26,8 @@ def filter_datum(fields: List[str], redaction:
         str: The obfuscated log message.
     """
     for field in fields:
-        message = re.sub(rf"{field}=[^{separator}]*",
-                         f"{field}={redaction}", message)
+        message = re.sub(
+            rf"{field}=[^{separator}]*", f"{field}={redaction}", message)
     return message
 
 
@@ -54,8 +54,8 @@ class RedactingFormatter(logging.Formatter):
             str: The formatted log record with obfuscated fields.
         """
         original = super(RedactingFormatter, self).format(record)
-        return filter_datum(self.fields,
-                            self.REDACTION, original, self.SEPARATOR)
+        return filter_datum(self.fields, self.REDACTION, original,
+                            self.SEPARATOR)
 
 
 PII_FIELDS = ("name", "email", "phone", "ssn", "password")
@@ -96,3 +96,29 @@ def get_db() -> connection.MySQLConnection:
         host=db_host,
         database=db_name
     )
+
+
+def main():
+    """
+    Retrieves and filters user data from the database and logs the output.
+    """
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT name, email, phone, ssn, password, ip, last_login, "
+        "user_agent FROM users;")
+    for row in cursor:
+        row_str = (
+            "name={}; email={}; phone={}; ssn={}; password={}; "
+            "ip={}; last_login={}; user_agent={};".format(
+                row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]
+            )
+        )
+        logger = get_logger()
+        logger.info(row_str)
+    cursor.close()
+    db.close()
+
+
+if __name__ == "__main__":
+    main()
