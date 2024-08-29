@@ -6,6 +6,9 @@ Module for filtering log messages with sensitive information.
 import re
 import logging
 from typing import List
+import os
+import mysql.connector
+from mysql.connector import connection
 
 
 def filter_datum(fields: List[str], redaction:
@@ -73,3 +76,23 @@ def get_logger() -> logging.Logger:
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
     return logger
+
+
+def get_db() -> connection.MySQLConnection:
+    """
+    Establishes a secure connection to a MySQL database.
+
+    Returns:
+        mysql.connector.connection.MySQLConnection: Database connection object.
+    """
+    db_user = os.getenv('PERSONAL_DATA_DB_USERNAME', 'root')
+    db_password = os.getenv('PERSONAL_DATA_DB_PASSWORD', '')
+    db_host = os.getenv('PERSONAL_DATA_DB_HOST', 'localhost')
+    db_name = os.getenv('PERSONAL_DATA_DB_NAME')
+
+    return mysql.connector.connect(
+        user=db_user,
+        password=db_password,
+        host=db_host,
+        database=db_name
+    )
