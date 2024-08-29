@@ -53,3 +53,23 @@ class RedactingFormatter(logging.Formatter):
         original = super(RedactingFormatter, self).format(record)
         return filter_datum(self.fields,
                             self.REDACTION, original, self.SEPARATOR)
+
+
+PII_FIELDS = ("name", "email", "phone", "ssn", "password")
+
+
+def get_logger() -> logging.Logger:
+    """
+    Creates and returns a logger that obfuscates PII fields.
+
+    Returns:
+        logging.Logger: Configured logger object.
+    """
+    logger = logging.getLogger("user_data")
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    stream_handler = logging.StreamHandler()
+    formatter = RedactingFormatter(fields=PII_FIELDS)
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+    return logger
