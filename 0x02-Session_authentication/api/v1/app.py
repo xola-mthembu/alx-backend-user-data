@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
-Route module for the API
+API route configuration module.
 """
 from os import getenv
-from api.v1.views import app_views
 from flask import Flask, jsonify, abort, request
-from flask_cors import (CORS, cross_origin)
-import os
+from flask_cors import CORS
+from api.v1.views import app_views
 
 
 app = Flask(__name__)
 app.register_blueprint(app_views)
 CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
+
+# Authentication mechanism selection based on environment variable
 auth = None
 AUTH_TYPE = getenv("AUTH_TYPE")
 
@@ -32,31 +33,10 @@ elif AUTH_TYPE == "session_db_auth":
     auth = SessionDBAuth()
 
 
-@app.errorhandler(404)
-def not_found(error) -> str:
-    """ Not found handler
-    """
-    return jsonify({"error": "Not found"}), 404
-
-
-@app.errorhandler(401)
-def unauthorized(error) -> str:
-    """ Unauthorized handler
-    """
-    return jsonify({"error": "Unauthorized"}), 401
-
-
-@app.errorhandler(403)
-def forbidden(error) -> str:
-    """ Forbidden handler
-    """
-    return jsonify({"error": "Forbidden"}), 403
-
-
 @app.before_request
-def before_request() -> None:
+def handle_before_request():
     """
-    Filter each request before it's handled by the proper route
+    Filter incoming requests before routing.
     """
     if auth is None:
         return
@@ -71,13 +51,37 @@ def before_request() -> None:
     if not auth.require_auth(request.path, excluded_paths):
         return
 
-    if auth.authorization_header(request) is None and \
-       auth.session_cookie(request) is None:
+    if (auth.authorization_header(request) is None and
+            auth.session_cookie(request) is None):
         abort(401)
 
     request.current_user = auth.current_user(request)
     if request.current_user is None:
         abort(403)
+
+
+@app.errorhandler(404)
+def handle_404(error):
+    """
+    Handle 404 errors.
+    """
+    return jsonify({"error": "Not found"}), 404
+
+
+@app.errorhandler(401)
+def handle_401(error):
+    """
+    Handle 401 errors (Unauthorized).
+    """
+    return jsonify({"error": "Unauthorized"}), 401
+
+
+@app.errorhandler(403)
+def handle_403(error):
+    """
+    Handle 403 errors (Forbidden).
+    """
+    return jsonify({"error": "Forbidden"}), 403
 
 
 if __name__ == "__main__":
