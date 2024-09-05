@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-""" Module of Users views
+""" User views module
 """
 from api.v1.views import app_views
 from flask import abort, jsonify, request
@@ -10,7 +10,7 @@ from models.user import User
 def view_all_users() -> str:
     """ GET /api/v1/users
     Return:
-      - list of all User objects JSON represented
+      - all User objects JSON represented list
     """
     all_users = [user.to_json() for user in User.all()]
     return jsonify(all_users)
@@ -43,7 +43,7 @@ def delete_user(user_id: str = None) -> str:
     Path parameter:
       - User ID
     Return:
-      - empty JSON is the User has been correctly deleted
+      - JSON is empty if User has been correctly deleted
       - 404 if the User ID doesn't exist
     """
     if user_id is None:
